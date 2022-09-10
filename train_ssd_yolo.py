@@ -32,6 +32,8 @@ from eval_ssd import MeanAPEvaluator
 from yolo_datasets import create_yolo_dataloader
 from utils.general import colorstr
 
+# --dataset-type=voc --data=/media/dcofer/Ubuntu_Data/active_shooter_defense/VOC2007 --model-dir=models/guns_640 --batch-size=20 --epochs=2 --resolution 640
+
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With PyTorch')
 
@@ -251,43 +253,18 @@ if __name__ == '__main__':
 
     test_transform = TestTransform(config.image_size, config.image_mean, config.image_std)
 
-    # load datasets (could be multiple)
-    logging.info("Prepare training datasets.")
-    datasets = []
-    for dataset_path in args.datasets:
-        if args.dataset_type == 'voc':
-            dataset = VOCDataset(dataset_path, transform=train_transform,
-                                 target_transform=target_transform)
-            label_file = os.path.join(args.checkpoint_folder, "labels.txt")
-            store_labels(label_file, dataset.class_names)
-            num_classes = len(dataset.class_names)
-        elif args.dataset_type == 'open_images':
-            dataset = OpenImagesDataset(dataset_path,
-                 transform=train_transform, target_transform=target_transform,
-                 dataset_type="train", balance_data=args.balance_data)
-            label_file = os.path.join(args.checkpoint_folder, "labels.txt")
-            store_labels(label_file, dataset.class_names)
-            logging.info(dataset)
-            num_classes = len(dataset.class_names)
-        elif args.dataset_type == "yolo":
-            train_path = os.path.join(dataset_path, 'train')
-            yolo_dataloader, dataset = create_yolo_dataloader(
-                train_path, args.resolution, args.batch_size, 32, single_cls=False,
-                augment=True, cache=False, rect=True,
-                image_weights=True, quad=True,
-                prefix=colorstr('train: '))
-        else:
-            raise ValueError(f"Dataset type {args.dataset_type} is not supported.")
-        datasets.append(dataset)
-        
     # create training dataset
-    logging.info(f"Stored labels into file {label_file}.")
-    train_dataset = ConcatDataset(datasets)
+    logging.info("Prepare training datasets.")
+    dataset_path = args.datasets[0]
+    train_path = os.path.join(dataset_path, 'train')
+    train_loader, train_dataset = create_yolo_dataloader(
+        train_path, args.resolution, args.batch_size, 32, single_cls=False,
+        augment=True, cache=False, rect=True,
+        image_weights=True, quad=True, workers=args.num_workers,
+        prefix=colorstr('train: '))
+    num_classes = len(train_dataset.class_names)
     logging.info("Train dataset size: {}".format(len(train_dataset)))
-    train_loader = DataLoader(train_dataset, args.batch_size,
-                              num_workers=args.num_workers,
-                              shuffle=True)
-                           
+
     # create validation dataset                           
     logging.info("Prepare Validation datasets.")
     if args.dataset_type == "voc":
@@ -298,12 +275,15 @@ if __name__ == '__main__':
                                         transform=test_transform, target_transform=target_transform,
                                         dataset_type="test")
         logging.info(val_dataset)
+
+    val_path = os.path.join(dataset_path, 'val')
+    val_loader, val_dataset = create_yolo_dataloader(
+        train_path, args.resolution, args.batch_size*2, 32, single_cls=False,
+        augment=True, cache=False, rect=True,
+        image_weights=True, quad=True, workers=args.num_workers,
+        prefix=colorstr('val: '))
     logging.info("Validation dataset size: {}".format(len(val_dataset)))
 
-    val_loader = DataLoader(val_dataset, args.batch_size,
-                            num_workers=args.num_workers,
-                            shuffle=False)
-                      
     # create the network
     logging.info("Build network.")
     net = create_net(num_classes)

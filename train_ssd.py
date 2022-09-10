@@ -29,6 +29,7 @@ from vision.ssd.config import squeezenet_ssd_config
 from vision.ssd.data_preprocessing import TrainAugmentation, TestTransform
 
 from eval_ssd import MeanAPEvaluator
+from yolo_dataset import YoloDataset
 
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With PyTorch')
@@ -182,6 +183,7 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
     tensorboard.add_scalar('Regression Loss/train', train_regression_loss, epoch)
     tensorboard.add_scalar('Classification Loss/train', train_classification_loss, epoch)
 
+
 def test(loader, net, criterion, device):
     net.eval()
     running_loss = 0.0
@@ -253,22 +255,27 @@ if __name__ == '__main__':
     datasets = []
     for dataset_path in args.datasets:
         if args.dataset_type == 'voc':
-            dataset = VOCDataset(dataset_path, transform=train_transform,
-                                 target_transform=target_transform)
-            label_file = os.path.join(args.checkpoint_folder, "labels.txt")
-            store_labels(label_file, dataset.class_names)
-            num_classes = len(dataset.class_names)
+            dataset = VOCDataset(
+                dataset_path, transform=train_transform,
+                target_transform=target_transform)
         elif args.dataset_type == 'open_images':
-            dataset = OpenImagesDataset(dataset_path,
-                 transform=train_transform, target_transform=target_transform,
-                 dataset_type="train", balance_data=args.balance_data)
-            label_file = os.path.join(args.checkpoint_folder, "labels.txt")
-            store_labels(label_file, dataset.class_names)
-            logging.info(dataset)
-            num_classes = len(dataset.class_names)
-
+            dataset = OpenImagesDataset(
+                dataset_path, transform=train_transform, target_transform=target_transform,
+                dataset_type="train", balance_data=args.balance_data)
+        elif args.dataset_type == 'yolo':
+            train_path = os.path.join(dataset_path, 'train')
+            dataset = YoloDataset(
+                train_path, transform=train_transform,
+                target_transform=target_transform,
+                keep_difficult=True)
         else:
             raise ValueError(f"Dataset type {args.dataset_type} is not supported.")
+
+        label_file = os.path.join(args.checkpoint_folder, "labels.txt")
+        store_labels(label_file, dataset.class_names)
+        logging.info(dataset)
+        num_classes = len(dataset.class_names)
+
         datasets.append(dataset)
         
     # create training dataset
@@ -289,6 +296,12 @@ if __name__ == '__main__':
                                         transform=test_transform, target_transform=target_transform,
                                         dataset_type="test")
         logging.info(val_dataset)
+    elif args.dataset_type == 'yolo':
+        val_path = os.path.join(dataset_path, 'validation')
+        val_dataset = YoloDataset(
+            val_path, transform=test_transform,
+            target_transform=target_transform,
+            keep_difficult=True)
     logging.info("Validation dataset size: {}".format(len(val_dataset)))
 
     val_loader = DataLoader(val_dataset, args.batch_size,
@@ -307,6 +320,9 @@ if __name__ == '__main__':
             eval_dataset = VOCDataset(dataset_path, is_test=True)
         elif args.dataset_type == 'open_images':
             eval_dataset = OpenImagesDataset(dataset_path, dataset_type="test")
+        elif args.dataset_type == 'yolo':
+            test_path = os.path.join(dataset_path, 'test')
+            eval_dataset = YoloDataset(test_path, keep_difficult=True)
         eval = MeanAPEvaluator(eval_dataset, net, arch=args.net, eval_dir=os.path.join(args.checkpoint_folder, 'eval_results'))
         
     # freeze certain layers (if requested)

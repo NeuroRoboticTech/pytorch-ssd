@@ -380,6 +380,24 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     gb += self.imgs[i].nbytes
                 pbar.desc = f'{prefix}Caching images ({gb / 1E9:.1f}GB)'
             pbar.close()
+        #
+        # # if the labels file exists, read in the class names
+        # label_file_name = path / "labels.txt"
+        # if os.path.isfile(label_file_name):
+        #     classes = []
+        #
+        #     # classes should be a line-separated list
+        #     with open(label_file_name, 'r') as infile:
+        #         for line in infile:
+        #             classes.append(line.rstrip())
+        #
+        #     # prepend BACKGROUND as first class
+        #     classes.insert(0, 'BACKGROUND')
+        #     #classes  = [ elem.replace(" ", "") for elem in classes]
+        #     self.class_names = tuple(classes)
+        #     logging.info("VOC Labels read from file: " + str(self.class_names))
+        #
+        # self.class_dict = {class_name: i for i, class_name in enumerate(self.class_names)}
 
     def cache_labels(self, path=Path('./labels.cache'), prefix=''):
         # Cache dataset labels, check images and read shapes
