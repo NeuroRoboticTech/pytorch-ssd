@@ -85,10 +85,11 @@ class SubtractMeans(object):
 class ToAbsoluteCoords(object):
     def __call__(self, image, boxes=None, labels=None):
         height, width, channels = image.shape
-        boxes[:, 0] *= width
-        boxes[:, 2] *= width
-        boxes[:, 1] *= height
-        boxes[:, 3] *= height
+        if len(boxes):
+            boxes[:, 0] *= width
+            boxes[:, 2] *= width
+            boxes[:, 1] *= height
+            boxes[:, 3] *= height
 
         return image, boxes, labels
 
@@ -96,10 +97,11 @@ class ToAbsoluteCoords(object):
 class ToPercentCoords(object):
     def __call__(self, image, boxes=None, labels=None):
         height, width, channels = image.shape
-        boxes[:, 0] /= width
-        boxes[:, 2] /= width
-        boxes[:, 1] /= height
-        boxes[:, 3] /= height
+        if len(boxes):
+            boxes[:, 0] /= width
+            boxes[:, 2] /= width
+            boxes[:, 1] /= height
+            boxes[:, 3] /= height
 
         return image, boxes, labels
 
@@ -250,6 +252,9 @@ class RandomSampleCrop(object):
             if mode is None:
                 return image, boxes, labels
 
+            if not len(boxes):
+                return image, boxes, labels
+
             min_iou, max_iou = mode
             if min_iou is None:
                 min_iou = float('-inf')
@@ -274,7 +279,10 @@ class RandomSampleCrop(object):
                 rect = np.array([int(left), int(top), int(left+w), int(top+h)])
 
                 # calculate IoU (jaccard overlap) b/t the cropped and gt boxes
-                overlap = jaccard_numpy(boxes, rect)
+                if len(boxes):
+                    overlap = jaccard_numpy(boxes, rect)
+                else:
+                    overlap = np.asarray([0.0])
 
                 # is min and max overlap constraint satisfied? if not try again
                 if overlap.min() < min_iou and max_iou < overlap.max():
@@ -285,7 +293,10 @@ class RandomSampleCrop(object):
                                               :]
 
                 # keep overlap with gt box IF center in sampled patch
-                centers = (boxes[:, :2] + boxes[:, 2:]) / 2.0
+                if len(boxes):
+                    centers = (boxes[:, :2] + boxes[:, 2:]) / 2.0
+                else:
+                    centers = np.asarray([])
 
                 # mask in all gt boxes that above and to the left of centers
                 m1 = (rect[0] < centers[:, 0]) * (rect[1] < centers[:, 1])
@@ -301,21 +312,24 @@ class RandomSampleCrop(object):
                     continue
 
                 # take only matching gt boxes
-                current_boxes = boxes[mask, :].copy()
+                if len(boxes):
+                    current_boxes = boxes[mask, :].copy()
 
-                # take only matching gt labels
-                current_labels = labels[mask]
+                    # take only matching gt labels
+                    current_labels = labels[mask]
 
-                # should we use the box left and top corner or the crop's
-                current_boxes[:, :2] = np.maximum(current_boxes[:, :2],
-                                                  rect[:2])
-                # adjust to crop (by substracting crop's left,top)
-                current_boxes[:, :2] -= rect[:2]
+                    # should we use the box left and top corner or the crop's
+                    current_boxes[:, :2] = np.maximum(current_boxes[:, :2],
+                                                      rect[:2])
+                    # adjust to crop (by substracting crop's left,top)
+                    current_boxes[:, :2] -= rect[:2]
 
-                current_boxes[:, 2:] = np.minimum(current_boxes[:, 2:],
-                                                  rect[2:])
-                # adjust to crop (by substracting crop's left,top)
-                current_boxes[:, 2:] -= rect[:2]
+                    current_boxes[:, 2:] = np.minimum(current_boxes[:, 2:],
+                                                      rect[2:])
+                    # adjust to crop (by substracting crop's left,top)
+                    current_boxes[:, 2:] -= rect[:2]
+                else:
+                    current_boxes = np.asarray([])
 
                 return current_image, current_boxes, current_labels
 
@@ -342,8 +356,9 @@ class Expand(object):
         image = expand_image
 
         boxes = boxes.copy()
-        boxes[:, :2] += (int(left), int(top))
-        boxes[:, 2:] += (int(left), int(top))
+        if len(boxes):
+            boxes[:, :2] += (int(left), int(top))
+            boxes[:, 2:] += (int(left), int(top))
 
         return image, boxes, labels
 
@@ -354,7 +369,8 @@ class RandomMirror(object):
         if random.randint(2):
             image = image[:, ::-1]
             boxes = boxes.copy()
-            boxes[:, 0::2] = width - boxes[:, 2::-2]
+            if len(boxes):
+                boxes[:, 0::2] = width - boxes[:, 2::-2]
         return image, boxes, classes
 
 

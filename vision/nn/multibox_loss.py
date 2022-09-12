@@ -42,6 +42,26 @@ class MultiboxLoss(nn.Module):
         pos_mask = labels > 0
         predicted_locations = predicted_locations[pos_mask, :].reshape(-1, 4)
         gt_locations = gt_locations[pos_mask, :].reshape(-1, 4)
+
+        # Check for any infinite in the locations.
+        is_inf = torch.isinf(gt_locations)
+        inf_idx_cmp = is_inf == True
+        inf_idx = inf_idx_cmp.nonzero()
+        if len(inf_idx):
+            while len(inf_idx):
+                inf_idx_np = inf_idx.cpu().numpy()
+                inf_row = inf_idx_np[0, 0]
+                gt_locations = gt_locations[
+                    torch.arange(1, gt_locations.shape[0] + 1) != inf_row+1, ...]
+                predicted_locations = predicted_locations[
+                    torch.arange(1, predicted_locations.shape[0] + 1) != inf_row+1, ...]
+                is_inf = torch.isinf(gt_locations)
+                inf_idx_cmp = is_inf == True
+                inf_idx = inf_idx_cmp.nonzero()
+
+            # new_gt_locations_np = gt_locations.cpu().numpy()
+
         smooth_l1_loss = F.smooth_l1_loss(predicted_locations, gt_locations, size_average=False)
         num_pos = gt_locations.size(0)
+
         return smooth_l1_loss/num_pos, classification_loss/num_pos

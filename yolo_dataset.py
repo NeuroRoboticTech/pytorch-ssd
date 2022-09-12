@@ -8,7 +8,7 @@ import os
 
 class YoloDataset:
 
-    def __init__(self, root, transform=None, target_transform=None, keep_difficult=False):
+    def __init__(self, root, transform=None, target_transform=None, keep_difficult=False, skip_no_labels=False):
         """Dataset for YOLO data.
         Args:
             root: the root of the YOLO dataset, the directory contains the following sub-directories:
@@ -20,6 +20,7 @@ class YoloDataset:
         self.transform = transform
         self.target_transform = target_transform
         self.keep_difficult = keep_difficult
+        self.skip_no_labels = skip_no_labels
 
         if not os.path.exists(self.images_dir):
             raise RuntimeError("images directory not found. dir: {}".format(self.images_dir))
@@ -28,14 +29,18 @@ class YoloDataset:
             raise RuntimeError("labels directory not found. dir: {}".format(self.labels_dir))
 
         self.image_list = sorted(glob.glob('%s/*.jpg' % self.images_dir))
-        self.label_list = sorted(glob.glob('%s/*.txt' % self.labels_dir))
 
         self.ids = []
         for image_file in self.image_list:
             image_id = pathlib.Path(image_file).stem
             label_file = os.path.join(self.labels_dir, image_id + '.txt')
+            label_file_size = os.path.getsize(label_file)
+
             if os.path.exists(image_file) and os.path.exists(label_file):
-                self.ids.append(image_id)
+                if not self.skip_no_labels or (self.skip_no_labels and label_file_size > 0):
+                    self.ids.append(image_id)
+                else:
+                    print("skipping file: {} because it has no label".format(image_id))
             else:
                 print("skipping file: {}".format(image_id))
 
@@ -61,6 +66,10 @@ class YoloDataset:
         self.class_dict = {class_name: i for i, class_name in enumerate(self.class_names)}
 
     def __getitem__(self, index):
+        _, image, boxes, labels = self._getitem(index)
+        return image, boxes, labels
+
+    def _getitem(self, index):
         image_id = self.ids[index]
         boxes, labels, is_difficult = self._get_annotation(image_id)
 
@@ -71,10 +80,11 @@ class YoloDataset:
         image = self._read_image(image_id)
 
         # Convert the normalized box values to concrete values for this image.
-        boxes[:, 0] *= image.shape[1]
-        boxes[:, 1] *= image.shape[0]
-        boxes[:, 2] *= image.shape[1]
-        boxes[:, 3] *= image.shape[0]
+        if len(boxes):
+            boxes[:, 0] *= image.shape[1]
+            boxes[:, 1] *= image.shape[0]
+            boxes[:, 2] *= image.shape[1]
+            boxes[:, 3] *= image.shape[0]
 
         if logging.root.level is logging.DEBUG:
             logging.debug(
@@ -85,7 +95,7 @@ class YoloDataset:
         if self.target_transform:
             boxes, labels = self.target_transform(boxes, labels)
 
-        return image, boxes, labels
+        return image_id, image, boxes, labels
 
     def get_image(self, index):
         image_id = self.ids[index]
@@ -95,8 +105,10 @@ class YoloDataset:
         return image
 
     def get_annotation(self, index):
-        image_id = self.ids[index]
-        return image_id, self._get_annotation(image_id)
+        """To conform the eval_ssd implementation that is based on the VOC dataset."""
+        image_id, image, boxes, labels = self._getitem(index)
+        is_difficult = np.zeros(boxes.shape[0], dtype=np.uint8)
+        return image_id, (boxes, labels, is_difficult)
 
     def __len__(self):
         return len(self.ids)
@@ -113,21 +125,34 @@ class YoloDataset:
                 if len(row_data) == 5:
                     # Add 1 here because we added a background as first ID.
                     class_id = int(row_data[0]) + 1
-                    x_center = float(row[1])
-                    y_center = float(row[2])
-                    width = float(row[3])
-                    height = float(row[4])
+                    x_center = float(row_data[1])
+                    y_center = float(row_data[2])
+                    width = float(row_data[3])
+                    height = float(row_data[4])
 
                     x_min = x_center - width / 2.0
                     x_max = x_center + width / 2.0
                     y_min = y_center - height / 2.0
                     y_max = y_center + height / 2.0
 
+                    # Ensure we do not go under 0 or above 1.
+                    x_min = max(x_min, 0.0)
+                    x_max = min(x_max, 1.0)
+                    y_min = max(y_min, 0.0)
+                    y_max = min(y_max, 1.0)
+
                     boxes.append([x_min, y_min, x_max, y_max])
                     labels.append(class_id)
                     is_difficult.append(0)
                 else:
                     print("Invalid row size for {}".format(image_id))
+
+        # If there are no labels in this image then we need to add one for the background
+        # so it does not mess up all the other calcs.
+        if not len(boxes):
+            boxes.append([0, 0, 0.01, 0.01])
+            labels.append(0)
+            is_difficult.append(0)
 
         return (np.array(boxes, dtype=np.float32),
                 np.array(labels, dtype=np.int64),

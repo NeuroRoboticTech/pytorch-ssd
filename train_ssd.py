@@ -180,8 +180,8 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
     )
      
     tensorboard.add_scalar('Loss/train', train_loss, epoch)
-    tensorboard.add_scalar('Regression Loss/train', train_regression_loss, epoch)
-    tensorboard.add_scalar('Classification Loss/train', train_classification_loss, epoch)
+    tensorboard.add_scalar('Regression_Loss/train', train_regression_loss, epoch)
+    tensorboard.add_scalar('Classification_Loss/train', train_classification_loss, epoch)
 
 
 def test(loader, net, criterion, device):
@@ -423,17 +423,17 @@ if __name__ == '__main__':
             )
                     
             tensorboard.add_scalar('Loss/val', val_loss, epoch)
-            tensorboard.add_scalar('Regression Loss/val', val_regression_loss, epoch)
-            tensorboard.add_scalar('Classification Loss/val', val_classification_loss, epoch)
+            tensorboard.add_scalar('Regression_Loss/val', val_regression_loss, epoch)
+            tensorboard.add_scalar('Classification_Loss/val', val_classification_loss, epoch)
     
             if args.validation_mean_ap:
                 mean_ap, class_ap = eval.compute()
                 eval.log_results(mean_ap, class_ap, f"Epoch: {epoch}, ")
                         
-                tensorboard.add_scalar('Mean Average Precision/val', mean_ap, epoch)
+                tensorboard.add_scalar('Mean_Average_Precision/val', mean_ap, epoch)
                 
                 for i in range(len(class_ap)):
-                    tensorboard.add_scalar(f"Class Average Precision/{eval_dataset.class_names[i+1]}", class_ap[i], epoch)
+                    tensorboard.add_scalar(f"Class_Average_Precision/{eval_dataset.class_names[i+1]}", class_ap[i], epoch)
     
             model_path = os.path.join(args.checkpoint_folder, f"{args.net}-Epoch-{epoch}-Loss-{val_loss}.pth")
             net.save(model_path)
