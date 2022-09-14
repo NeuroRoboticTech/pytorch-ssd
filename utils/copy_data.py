@@ -25,8 +25,8 @@ partition_group = 0
 # img_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/gun/train/images/'
 # labels_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/gun/train/labels/'
 
-# img_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/other/train/group_4/images/'
-# labels_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/other/train/group_4/labels/'
+# img_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/other/train/group_8/images/'
+# labels_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/other/train/group_8/labels/'
 
 # img_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/gun/train/images/'
 # labels_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/gun/train/labels/'
@@ -34,11 +34,17 @@ partition_group = 0
 # img_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/other/train/group_2/images/'
 # labels_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/other/train/group_2/labels/'
 
-# img_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/gun/test/images/'
-# labels_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/gun/test/labels/'
+img_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/gun/test/images/'
+labels_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/gun/test/labels/'
 
-img_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/other/test/images/'
-labels_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/other/test/labels/'
+# img_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/other/test/images/'
+# labels_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/other/test/labels/'
+
+# output_img_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/ssd/train/images/'
+# output_label_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/ssd/train/labels/'
+
+# output_img_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/ssd/validation/images/'
+# output_label_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/ssd/validation/labels/'
 
 output_img_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/ssd/test/images/'
 output_label_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/ssd/test/labels/'

@@ -57,6 +57,7 @@ parser.add_argument('--mb2-width-mult', default=1.0, type=float,
 parser.add_argument('--base-net', help='Pretrained base model')
 parser.add_argument('--pretrained-ssd', default='models/mobilenet-v1-ssd-mp-0_675.pth', type=str, help='Pre-trained base model')
 parser.add_argument('--resume', default=None, type=str, help='Checkpoint state_dict file to resume training from')
+parser.add_argument('--resume-epoch', default=None, type=int, help='last epoch from which we are resuming')
 
 # Params for SGD
 parser.add_argument('--lr', '--learning-rate', default=0.01, type=float,
@@ -369,6 +370,8 @@ if __name__ == '__main__':
     if args.resume:
         logging.info(f"Resume from the model {args.resume}")
         net.load(args.resume)
+        if args.resume_epoch is not None:
+            last_epoch = int(args.resume_epoch)
     elif args.base_net:
         logging.info(f"Init from base net {args.base_net}")
         net.init_from_base_net(args.base_net)
@@ -387,7 +390,10 @@ if __name__ == '__main__':
                              
     optimizer = torch.optim.SGD(params, lr=args.lr, momentum=args.momentum,
                                 weight_decay=args.weight_decay)
-                                
+    if last_epoch != -1:
+        for group in optimizer.param_groups:
+            group.setdefault('initial_lr', args.lr)
+
     logging.info(f"Learning rate: {args.lr}, Base net learning rate: {base_net_lr}, "
                  + f"Extra Layers learning rate: {extra_layers_lr}.")
 
@@ -396,7 +402,7 @@ if __name__ == '__main__':
         logging.info("Uses MultiStepLR scheduler.")
         milestones = [int(v.strip()) for v in args.milestones.split(",")]
         scheduler = MultiStepLR(optimizer, milestones=milestones,
-                                                     gamma=0.1, last_epoch=last_epoch)
+                                gamma=0.1, last_epoch=last_epoch)
     elif args.scheduler == 'cosine':
         logging.info("Uses CosineAnnealingLR scheduler.")
         scheduler = CosineAnnealingLR(optimizer, args.t_max, last_epoch=last_epoch)

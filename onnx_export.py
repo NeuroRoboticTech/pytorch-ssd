@@ -12,6 +12,7 @@ from vision.ssd.mobilenetv1_ssd import create_mobilenetv1_ssd
 from vision.ssd.mobilenetv1_ssd_lite import create_mobilenetv1_ssd_lite
 from vision.ssd.squeezenet_ssd_lite import create_squeezenet_ssd_lite
 from vision.ssd.mobilenet_v2_ssd_lite import create_mobilenetv2_ssd_lite
+from vision.ssd.config import mobilenetv1_ssd_config
 
 
 # parse command line
@@ -70,6 +71,8 @@ if args.net == 'vgg16-ssd':
     net = create_vgg_ssd(len(class_names), is_test=True)
 elif args.net == 'mb1-ssd' or args.net == 'ssd-mobilenet':
     net = create_mobilenetv1_ssd(len(class_names), is_test=True)
+    # config = mobilenetv1_ssd_config
+    # config.set_image_size(args.width)
 elif args.net == 'mb1-ssd-lite':
     net = create_mobilenetv1_ssd_lite(len(class_names), is_test=True)
 elif args.net == 'mb2-ssd-lite':

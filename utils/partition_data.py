@@ -19,7 +19,7 @@ file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 logger.addHandler(stdout_handler)
 
-partition_group = 7
+partition_group = 8
 
 img_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/other/train/images/'
 labels_dir = '/media/dcofer/Ubuntu_Data/active_shooter_defense/gun_dataset/detector/other/train/labels_combined/'
